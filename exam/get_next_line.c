@@ -9,20 +9,22 @@ int ft_strlen(char *s)
         i++;
     return (i);
 }
-int ft_strchr(char *str, char c)
+char	*ft_strchr(const char *s, int c)
 {
-    int i;
-    
-    i = 0;
-    while (str[i])
-    {
-        if (str[i] == '\n')
-            return (1);
-        i++;
-    }
-    if (str[i] == c)
-        return (1);
-    return (0);
+	size_t	i;
+
+	i = 0;
+	if (!s)
+		return (NULL);
+	while (s[i])
+	{
+		if (s[i] == (char)c)
+			return ((char *)(s + i));
+		i++;
+	}
+	if (s[i] == (char)c)
+		return ((char *)(s + i));
+	return (NULL);
 }
 
 char *ft_strdup(char *s)
@@ -47,26 +49,30 @@ char *ft_strdup(char *s)
 
 char *ft_strjoin(char *s1, char *s2)
 {
-    if (!s1 || !s2)
+    if (!s1 && !s2)
         return (NULL);
     if (!s1)
         return (ft_strdup(s2));
     if (!s2)
         return (ft_strdup(s1));
-    char *join;
-    int i = 0 ;
-    int end = 0;
-    join = malloc(ft_strlen(s1) + ft_strlen(s2) + 1);
+
+    int len1 = ft_strlen(s1);
+    int len2 = ft_strlen(s2);
+
+    char *join = malloc(len1 + len2 + 1);
     if (!join)
         return (NULL);
-    while (s1[end++])
-        join[end] = s1[end];
 
-    while (s2[i])
-        join[end++] = s2[i++];
+    int i = 0;
+    for (; i < len1; i++)
+        join[i] = s1[i];
 
-    join[end] = '\0';
-    return (join);
+    for (int j = 0; j < len2; j++)
+        join[i + j] = s2[j];
+
+    join[i + len2] = '\0';
+
+    return join;
 }
    //------------------------------------------------------------------------------------------------ 
 char *read_fd(int fd, char *static_str)
@@ -78,8 +84,8 @@ char *read_fd(int fd, char *static_str)
     buff = malloc((size_t)BUFFER_SIZE + 1);
     if (!buff)
         return (NULL);
-
-    while (read_byte && ft_strchr(buff, '\n'))
+    read_byte = 1;
+    while (read_byte && !ft_strchr(buff, '\n'))
     {
         read_byte = read(fd, buff, BUFFER_SIZE);
         if (read_byte < 0)
@@ -100,28 +106,34 @@ char *read_fd(int fd, char *static_str)
         static_str = tmp;
     }
     free(buff);
-    return (tmp);
+    return (static_str);
 }
 
 char *extract_line(char *str)
 {
     int i = 0;
     char *line;
+
+    if (!*str)
+        return (NULL);
     while (str[i] && str[i] != '\n')
         i++;
     if (str[i] == '\n')
         i++;
 
-    line = malloc(ft_strlen(str) - i);
+    line = malloc( i + 1);
     if (!line)
         return (NULL);
 
     i = 0;
-    while (str[i] && str[i] != '\n')
-        line[i] = str[i++];
+    while (str[i] && str[i] != '\n'){
+        line[i] = str[i];
+        i++;
+    }
 
     if (str[i] == '\n')
         line[i++] = '\n';
+    
     line[i] = '\0';
     return (line);
 }   
@@ -130,22 +142,27 @@ char *extract_line(char *str)
 char *remove_line(char *str)
 {
     int i = 0;
-    char *new_static;
+    int j = 0;
+    int *new_str;
+    
     while (str[i] && str[i] != '\n')
         i++;
-    int new_len = ft_strlen(&str[i]);
-    int len = 0;
-    new_static = malloc(new_len);
-    while (len < new_len)
-        new_static[len++] = str[i++];
-    new_static[len] = '\0';
+    if (!str[i])
+        return (free(str), NULL);
+    new_str = malloc(ft_strlen(str) - i);
+    if (!new_str)
+        return (NULL);
+    i++;
+    while (str[i])
+        new_str[j++] = str[i++];
+    new_str[j] = '\0';
     free(str);
-    return new_static;
+    return (new_str);
 }
 
 char *get_next_line(int fd)
 {
-    if (fd > INT_MAX|| fd <= 0)
+    if (fd > INT_MAX|| BUFFER_SIZE <= 0)
         return (NULL);
 
     static char *static_str;
@@ -159,12 +176,15 @@ char *get_next_line(int fd)
     return (line);
 }
 
+void f(){system("leaks a.out");}
 
 int main(void)
 {
-    int fd = open("get_next_line.h", O_CREAT | O_RDONLY | O_WRONLY, 0777);
+    atexit(f);
+    int fd = open("get_next_line.h", O_RDWR);
     if (fd < 0)
         return (1);
     printf("%s", get_next_line(fd));
-    
+    printf("%s", get_next_line(fd));
+    printf("%s", get_next_line(fd));
 }
